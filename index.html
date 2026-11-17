@@ -56,7 +56,7 @@ function isServerFound(data){
 }
 
 function showNotFound(message){
- document.getElementById("status").textContent = "SERVER NOT FOUND";
+ document.getElementById("status").textContent = "OFFLINE";
  document.getElementById("dot").className = "dot offline";
  document.getElementById("players").textContent = "-- / --";
  document.getElementById("progress").style.width = "0%";
@@ -66,7 +66,7 @@ function showNotFound(message){
 
 function showFound(data){
  const online = data.players.online, max = data.players.max;
- document.getElementById("status").textContent = "SERVER FOUND";
+ document.getElementById("status").textContent = "ONLINE";
  document.getElementById("dot").className = "dot online";
  document.getElementById("players").textContent = `${online} / ${max || "?"}`;
  document.getElementById("progress").style.width = max > 0 ? Math.min(online / max * 100, 100) + "%" : "0%";
