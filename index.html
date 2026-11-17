@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft Server Status</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #101522;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.card {
+    width: min(90%, 420px);
+    padding: 28px;
+    border: 1px solid #303b50;
+    border-radius: 18px;
+    background: #1b2536;
+    text-align: center;
+}
+
+h1 { margin-top: 0; }
+
+.status {
+    font-size: 25px;
+    font-weight: bold;
+    margin: 24px 0;
+}
+
+.online { color: #54e68a; }
+.offline { color: #ff6262; }
+
+.info {
+    color: #b6c2d5;
+    margin: 12px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px 25px;
+    border: 0;
+    border-radius: 9px;
+    background: #7255e8;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover { background: #8a72f0; }
+</style>
+</head>
+
+<body>
+<div class="card">
+    <h1>⛏ Minecraft Server</h1>
+
+    <div id="status" class="status">Checking...</div>
+
+    <div class="info" id="address">Server: tienminh1234check.aternos.me</div>
+    <div class="info" id="players">Players: -- / --</div>
+    <div class="info" id="version">Version: --</div>
+
+    <button onclick="checkServer()">Refresh Status</button>
+    <p class="info" id="updated"></p>
+</div>
+
+<script>
+const SERVER = "tienminh1234check.aternos.me";
+
+async function checkServer() {
+    const status = document.getElementById("status");
+    const players = document.getElementById("players");
+    const version = document.getElementById("version");
+
+    status.textContent = "Checking...";
+    status.className = "status";
+
+    try {
+        const response = await fetch(
+            "https://api.mcsrvstat.us/3/" +
+            encodeURIComponent(SERVER)
+        );
+
+        if (!response.ok) throw new Error("API error");
+
+        const data = await response.json();
+
+        if (data.online) {
+            status.textContent = "● ONLINE";
+            status.className = "status online";
+
+            players.textContent =
+                `Players: ${data.players?.online ?? 0} / ${data.players?.max ?? "?"}`;
+
+            version.textContent =
+                "Version: " + (data.version || "Unknown");
+        } else {
+            status.textContent = "● OFFLINE";
+            status.className = "status offline";
+            players.textContent = "Players: 0";
+            version.textContent = "Version: --";
+        }
+
+        document.getElementById("updated").textContent =
+            "Last checked: " + new Date().toLocaleTimeString();
+
+    } catch (error) {
+        status.textContent = "Unable to check";
+        status.className = "status offline";
+        players.textContent = "Please try again.";
+        version.textContent = "Version: --";
+    }
+}
+
+checkServer();
+</script>
+</body>
+</html>
