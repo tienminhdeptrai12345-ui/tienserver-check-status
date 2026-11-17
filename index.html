@@ -38,30 +38,57 @@ const SERVER = "tienminh1234check.aternos.me:35419";
 const API = "https://api.mcsrvstat.us/3/";
 document.getElementById("address").textContent = SERVER;
 let checking = false;
+
+/* Strict check: the server counts as "found" only if the API confirms it
+   is online AND the response looks like a real Minecraft status reply.
+   Hostname / IP / DNS results alone never count. */
+function isServerFound(data){
+ if(!data || typeof data !== "object") return false;
+ if(data.online !== true) return false;                       // API must explicitly confirm online
+ if(!data.players || typeof data.players.online !== "number" ||
+    typeof data.players.max !== "number") return false;        // must contain real player info
+ if(typeof data.protocol?.version === "number" && data.protocol.version < 0) return false; // placeholder ping (e.g. Aternos offline)
+ const versionText = String(data.version || "").toLowerCase();
+ if(versionText.includes("offline")) return false;             // placeholder "● Offline" version
+ const motd = (data.motd?.clean || []).join(" ").toLowerCase();
+ if(motd.includes("offline") && data.players.max === 0) return false; // placeholder offline MOTD
+ return true;
+}
+
+function showNotFound(message){
+ document.getElementById("status").textContent = "SERVER NOT FOUND";
+ document.getElementById("dot").className = "dot offline";
+ document.getElementById("players").textContent = "-- / --";
+ document.getElementById("progress").style.width = "0%";
+ document.getElementById("playerText").textContent = message;
+ document.getElementById("version").textContent = "Server Not Found";
+}
+
+function showFound(data){
+ const online = data.players.online, max = data.players.max;
+ document.getElementById("status").textContent = "SERVER FOUND";
+ document.getElementById("dot").className = "dot online";
+ document.getElementById("players").textContent = `${online} / ${max || "?"}`;
+ document.getElementById("progress").style.width = max > 0 ? Math.min(online / max * 100, 100) + "%" : "0%";
+ document.getElementById("playerText").textContent = `${online} player(s) currently online`;
+ document.getElementById("version").textContent = "Server Found";
+}
+
 async function checkServer(){
  if(checking)return;checking=true;
- const button=document.getElementById("refresh"),status=document.getElementById("status"),dot=document.getElementById("dot");
+ const button=document.getElementById("refresh"),status=document.getElementById("status");
  button.disabled=true;button.textContent="Checking...";status.textContent="CHECKING...";
  try{
-  const response=await fetch(API+encodeURIComponent(SERVER));if(!response.ok)throw new Error("API unavailable");
+  const response=await fetch(API+encodeURIComponent(SERVER));
+  if(!response.ok)throw new Error("API unavailable");
   const data=await response.json();
-  if(data.online){
-   status.textContent="ONLINE";dot.className="dot online";
-   const online=data.players?.online??0,max=data.players?.max??0;
-   document.getElementById("players").textContent=`${online} / ${max||"?"}`;
-   document.getElementById("progress").style.width=max>0?Math.min(online/max*100,100)+"%":"0%";
-   document.getElementById("playerText").textContent=`${online} player(s) currently online`;
-   document.getElementById("version").textContent=data.version||"Unknown";
+  if(isServerFound(data)){
+   showFound(data);
   }else{
-   status.textContent="OFFLINE";dot.className="dot offline";
-   document.getElementById("players").textContent="0 / --";document.getElementById("progress").style.width="0%";
-   document.getElementById("playerText").textContent="The server is currently unavailable.";
-   document.getElementById("version").textContent="--";
+   showNotFound("The server could not be detected or is not responding.");
   }
  }catch(error){
-  status.textContent="UNKNOWN";dot.className="dot offline";document.getElementById("players").textContent="-- / --";
-  document.getElementById("progress").style.width="0%";document.getElementById("playerText").textContent="Unable to reach the status API. Try again later.";
-  document.getElementById("version").textContent="--";
+  showNotFound("Unable to reach the status API. Try again later.");
  }
  document.getElementById("updated").textContent=new Date().toLocaleTimeString();
  button.disabled=false;button.textContent="↻ Refresh";checking=false;
