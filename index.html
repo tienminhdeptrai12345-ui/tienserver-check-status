@@ -43,18 +43,29 @@ document.getElementById("address").textContent = SERVER;
 let checking = false;
 
 function isServerFound(data) {
+
+function isServerFound(data) {
     if (!data || typeof data !== "object") return false;
 
-    // The API must explicitly confirm that the server is online.
+    // API must confirm a successful ping.
     if (data.online !== true) return false;
-
-    // Require a successful Minecraft status ping.
     if (data.debug?.ping !== true) return false;
 
-    // Reject offline or placeholder responses.
+    // Reject Aternos offline placeholder.
     const version = String(data.version || "").toLowerCase();
 
     if (version.includes("offline")) return false;
+
+    // Aternos offline placeholder uses protocol version -1.
+    if (data.protocol?.version === -1) return false;
+
+    // Check the MOTD for Aternos' offline message.
+    const motd = [
+        ...(data.motd?.clean || []),
+        ...(data.motd?.raw || [])
+    ].join(" ").toLowerCase();
+
+    if (motd.includes("this server is offline")) return false;
 
     return true;
 }
